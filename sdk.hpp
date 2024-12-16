@@ -155,7 +155,7 @@ namespace cache
 	inline uintptr_t closest_mesh;
 	inline Camera local_camera;
 }
-// https://github.com/VexxyDevs/Fortnite-Offsets/blob/main/Camera.h
+// https://github.com/vexify1337/Fortnite-Offsets/blob/main/Camera.h
 Camera get_view_point()
 {
 	Camera view_point{};
@@ -195,7 +195,7 @@ Vector3 get_entity_bone(uintptr_t mesh, int bone_id)
 	return Vector3(matrix._41, matrix._42, matrix._43);
 }
 
-// https://github.com/VexxyDevs/Fortnite-Offsets/blob/main/SDK_Updated.h
+// https://github.com/vexify1337/Fortnite-Offsets/blob/main/SDK_Updated.h
 
 namespace fnsdk {
 	bool VisiCheck(uintptr_t cached_mesh)
