@@ -6,4 +6,4 @@
 - Box ESP
 - Cornered Box
 
-- https://discord.gg/YA6j3mDEEV For More Sources, offsets & Updates!
+- https://discord.gg/YA6j3mDEEV For More Sources, offsets & Updates! (You also need to join to get the other required files)
