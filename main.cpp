@@ -2,21 +2,7 @@
 #include "includes.hpp"
 #include <iostream>
 #include <thread>
-static auto cr3_loop() -> void {
 
-	auto LatestGworld = readd<uintptr_t>(baseaddy + offsets::gworld);
-	while (true) {
-		cache::uworld = readd<uintptr_t>(baseaddy + offsets::gworld);
-		if (LatestGworld != cache::uworld) {
-			auto cr3 = Driver::GetDir();
-			printf("DTB ---> 0x%llx\n", cr3);
-			LatestGworld = readd<uintptr_t>(baseaddy + offsets::gworld);
-
-		}
-
-		std::this_thread::sleep_for(std::chrono::microseconds(100));
-	}
-}
 void main()
 {
 	printf("Waiting for Fortnite...");
@@ -38,8 +24,6 @@ void main()
 		exit(0);
 	}
 
-	Driver::GetDir();
-	std::thread([&]() { { cr3_loop(); } }).detach();
 	create_overlay(); 
 	directx_init();
 	render_loop();
