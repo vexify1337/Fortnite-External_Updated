@@ -1,4 +1,4 @@
-// sdk offset https://github.com/VexxyDevs/Fortnite-Offsets/blob/main/offsets.h
+// sdk offset https://github.com/vexify1337/Fortnite-Offsets/blob/main/offsets.h
 namespace offsets {
 
 	inline static uintptr_t gworld = 0x170D9D88;
