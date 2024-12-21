@@ -155,20 +155,21 @@ namespace cache
 	inline uintptr_t closest_mesh;
 	inline Camera local_camera;
 }
-// https://github.com/vexify1337/Fortnite-Offsets/blob/main/Camera.h
+
 Camera get_view_point()
 {
+	//YOU MIGHT NEED TO UPDATE THE LOCATION AND ROTATION POINTER IN THE NEXT UPDATE SO CHECK IT OUT DONT FORGET!
 	Camera view_point{};
-	uintptr_t location_pointer = readd<uintptr_t>(cache::uworld + 0x130); //
-	uintptr_t rotation_pointer = readd<uintptr_t>(cache::uworld + 0x140); //
+	uintptr_t location_pointer = read<uintptr_t>(cache::uworld + 0x128); //
+	uintptr_t rotation_pointer = read<uintptr_t>(cache::uworld + 0x138); //
 	FNRot fnrot{};
-	fnrot.a = readd<double>(rotation_pointer);
-	fnrot.b = readd<double>(rotation_pointer + 0x20);
-	fnrot.c = readd<double>(rotation_pointer + 0x1D0);
-	view_point.location = readd<Vector3>(location_pointer);
+	fnrot.a = read<double>(rotation_pointer);
+	fnrot.b = read<double>(rotation_pointer + 0x20);
+	fnrot.c = read<double>(rotation_pointer + 0x1D0);
+	view_point.location = read<Vector3>(location_pointer);
 	view_point.rotation.x = asin(fnrot.c) * (180.0 / M_PI);
 	view_point.rotation.y = ((atan2(fnrot.a * -1, fnrot.b) * (180.0 / M_PI)) * -1) * -1;
-	view_point.fov = readd<float>(cache::player_controller + 0x3AC) * 90.0f;
+	view_point.fov = read<float>(cache::player_controller + 0x3AC) * 90.0f;
 	return view_point;
 }
 
@@ -187,20 +188,22 @@ Vector2 project_world_to_screen(Vector3 world_location)
 
 Vector3 get_entity_bone(uintptr_t mesh, int bone_id)
 {
-	uintptr_t bone_array = readd<uintptr_t>(mesh + offsets::bone_array);
-	if (bone_array == 0) bone_array = readd<uintptr_t>(mesh + 0x5B8); // 0x10
-	FTransform bone = readd<FTransform>(bone_array + (bone_id * 0x60));
-	FTransform component_to_world = readd<FTransform>(mesh + offsets::component_to_world);
+	uintptr_t bone_array = read<uintptr_t>(mesh + BONE_ARRAY);
+	if (bone_array == 0) bone_array = read<uintptr_t>(mesh + BONE_ARRAY_CACHE); // 0x10
+	FTransform bone = read<FTransform>(bone_array + (bone_id * 0x60));
+	FTransform component_to_world = read<FTransform>(mesh + COMPONENT_TO_WORLD);
 	D3DMATRIX matrix = matrix_multiplication(bone.to_matrix_with_scale(), component_to_world.to_matrix_with_scale());
 	return Vector3(matrix._41, matrix._42, matrix._43);
 }
+
+
 
 // https://github.com/vexify1337/Fortnite-Offsets/blob/main/SDK_Updated.h
 
 namespace fnsdk {
 	bool VisiCheck(uintptr_t cached_mesh)
 	{
-		auto Mili = readd<double>(cache::uworld + 0x150);
+		auto Mili = readd<double>(cache::uworld + 0x148);
 		auto LastRenderTime = readd<float>(cached_mesh + 0x30C); // 0x30C
 		return Mili - LastRenderTime <= 0.06f;
 	}
