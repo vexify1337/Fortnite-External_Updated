@@ -1,14 +1,14 @@
 // sdk offset https://github.com/vexify1337/Fortnite-Offsets/blob/main/offsets.h
 namespace offsets {
 
-	inline static uintptr_t gworld = 0x170D9D88;
+	inline static uintptr_t gworld = 0x169D6108;
 	inline static uintptr_t gnames = 0x17b01480;
 	inline static uintptr_t local_pawn = 0x350;
 	inline static uintptr_t player_controller = 0x30;
 	inline static uintptr_t local_players = 0x38;
 	inline static uintptr_t player_state = 0x2c8;
-	inline static uintptr_t game_instance = 0x200;
-	inline static uintptr_t game_state = 0x188;
+	inline static uintptr_t game_instance = 0x1f0;
+	inline static uintptr_t game_state = 0x178;
 	inline static uintptr_t player_array = 0x2c0;
 	inline static uintptr_t root_component = 0x1b0;
 	inline static uintptr_t relative_location = 0x138; // 0x120 
