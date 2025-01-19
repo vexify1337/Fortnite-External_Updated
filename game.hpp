@@ -75,13 +75,13 @@ void create_overlay()
 		LoadCursor(0, IDC_ARROW),
 		0,
 		0,
-		"lol",
+		"EasyAntiCheat",
 		LoadIcon(0, IDI_APPLICATION)
 	};
 	ATOM rce = RegisterClassExA(&wcex);
 	RECT rect;
 	GetWindowRect(GetDesktopWindow(), &rect);
-	my_wnd = gui::create_window_in_band(0, rce, L"ud", WS_POPUP, rect.left, rect.top, rect.right, rect.bottom, 0, 0, wcex.hInstance, 0, gui::ZBID_UIACCESS);
+	my_wnd = gui::create_window_in_band(0, rce, L"EasyAntiCheat", WS_POPUP, rect.left, rect.top, rect.right, rect.bottom, 0, 0, wcex.hInstance, 0, gui::ZBID_UIACCESS);
 	SetWindowLong(my_wnd, GWL_EXSTYLE, WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW);
 	SetLayeredWindowAttributes(my_wnd, RGB(0, 0, 0), 255, LWA_ALPHA);
 	MARGINS margin = { -1 };
@@ -93,7 +93,7 @@ void create_overlay()
 void aimbot(uintptr_t target_mesh)
 {
 	if (!target_mesh) return;
-	if (!fnsdk::VisiCheck(target_mesh)) return;
+	if (!is_visible(target_mesh)) return;
 	Vector3 head3d = get_entity_bone(target_mesh, 110);
 	Vector2 head2d = project_world_to_screen(head3d);
 	Vector2 target{};
@@ -176,35 +176,38 @@ using namespace std::chrono;
 
 
 
+
+
+
 void game_loop()
 {
-	cache::uworld = readd<uintptr_t>(baseaddy + offsets::gworld);
-	cache::game_instance = readd<uintptr_t>(cache::uworld + offsets::game_instance);
-	cache::local_players = readd<uintptr_t>(readd<uintptr_t>(cache::game_instance + offsets::local_players));
-	cache::player_controller = readd<uintptr_t>(cache::local_players + offsets::player_controller);
-	cache::local_pawn = readd<uintptr_t>(cache::player_controller + offsets::local_pawn);
+	cache::uworld = read<uintptr_t>(Base + UWORLD);
+	cache::game_instance = read<uintptr_t>(cache::uworld + GAME_INSTANCE);
+	cache::local_players = read<uintptr_t>(read<uintptr_t>(cache::game_instance + LOCAL_PLAYERS));
+	cache::player_controller = read<uintptr_t>(cache::local_players + PLAYER_CONTROLLER);
+	cache::local_pawn = read<uintptr_t>(cache::player_controller + LOCAL_PAWN);
 	if (cache::local_pawn != 0)
 	{
-		cache::root_component = readd<uintptr_t>(cache::local_pawn + offsets::root_component);
-		cache::relative_location = readd<Vector3>(cache::root_component + offsets::relative_location);
-		cache::player_state = readd<uintptr_t>(cache::local_pawn + offsets::player_state);
-		cache::my_team_id = readd<int>(cache::player_state + offsets::team_index);
+		cache::root_component = read<uintptr_t>(cache::local_pawn + ROOT_COMPONENT);
+		cache::relative_location = read<Vector3>(cache::root_component + RELATIVE_LOCATION);
+		cache::player_state = read<uintptr_t>(cache::local_pawn + PLAYER_STATE);
+		cache::my_team_id = read<int>(cache::player_state + TEAM_INDEX);
 	}
-	cache::game_state = readd<uintptr_t>(cache::uworld + offsets::game_state);
-	cache::player_array = readd<uintptr_t>(cache::game_state + offsets::player_array);
-	cache::player_count = readd<int>(cache::game_state + (offsets::player_array + sizeof(uintptr_t)));
+	cache::game_state = read<uintptr_t>(cache::uworld + GAME_STATE);
+	cache::player_array = read<uintptr_t>(cache::game_state + PLAYER_ARRAY);
+	cache::player_count = read<int>(cache::game_state + (PLAYER_ARRAY + sizeof(uintptr_t)));
 	cache::closest_distance = FLT_MAX;
 	cache::closest_mesh = NULL;
 	for (int i = 0; i < cache::player_count; i++)
 	{
-		uintptr_t player_state = readd<uintptr_t>(cache::player_array + (i * sizeof(uintptr_t)));
+		uintptr_t player_state = read<uintptr_t>(cache::player_array + (i * sizeof(uintptr_t)));
 		if (!player_state) continue;
-		int player_team_id = readd<int>(player_state + offsets::team_index);
+		int player_team_id = read<int>(player_state + TEAM_INDEX);
 		if (player_team_id == cache::my_team_id) continue;
-		uintptr_t pawn_private = readd<uintptr_t>(player_state + offsets::pawn_private);
+		uintptr_t pawn_private = read<uintptr_t>(player_state + PAWN_PRIVATE);
 		if (!pawn_private) continue;
 		if (pawn_private == cache::local_pawn) continue;
-		uintptr_t mesh = readd<uintptr_t>(pawn_private + offsets::mesh);
+		uintptr_t mesh = read<uintptr_t>(pawn_private + MESH);
 		if (!mesh) continue;
 		Vector3 head3d = get_entity_bone(mesh, 110);
 		Vector2 head2d = project_world_to_screen(head3d);
@@ -217,7 +220,7 @@ void game_loop()
 		{
 			if (settings::visuals::Box)
 			{
-				if (fnsdk::VisiCheck(mesh))
+				if (is_visible(mesh))
 				{
 					Box(head2d.x - (box_width / 2), head2d.y, box_width, box_height, ImColor(250, 250, 250, 250), 1);
 				}
@@ -232,7 +235,7 @@ void game_loop()
 		{
 			if (settings::visuals::CorneredBox)
 			{
-				if (fnsdk::VisiCheck(mesh))
+				if (is_visible(mesh))
 				{
 					draw_cornered_box(head2d.x - (box_width / 2), head2d.y, box_width, box_height, ImColor(250, 250, 250, 250), 1);
 				}
@@ -244,7 +247,7 @@ void game_loop()
 			}
 			if (settings::visuals::line)
 			{
-				if (fnsdk::VisiCheck(mesh))
+				if (is_visible(mesh))
 				{
 					draw_line(bottom2d, ImColor(250, 250, 250, 250));
 				}
@@ -286,63 +289,291 @@ void game_loop()
 		//draw_list->AddLine(horizontal_start, horizontal_end, settings::crosshair_color, settings::crosshair_thickness);
 		//draw_list->AddLine(vertical_start, vertical_end, settings::crosshair_color, settings::crosshair_thickness);
 	}
+	if (settings::Features::Watermark) {
+
+		ImVec2 position = ImVec2(30, 30);
+		ImColor color = ImColor(0.63f, 0.13f, 0.94f, 1.f);
+		const char* text = "Detected Cheats, FREE External";
+
+		//  ImVec2 position = ImVec2(30, 30);
+		//  ImColor color = ImColor(1.0f, 1.0f, 1.0f, 1.f);
+		//  const char* text = "SofMain FN Base [Private Build]";
+
+		ImGui::GetForegroundDrawList()->AddText(position, color, text);
+
+
+	}
+	
+}
+
+
+void Crosshair()
+{
+	if (ImGui::Checkbox("Crosshair", &settings::Crosshair))
+	{
+		//ImVec4 color = ImGui::ColorConvertU32ToFloat4(settings::crosshair_color);
+		//if (ImGui::ColorEdit4("Crosshair Color", (float*)&color))
+	//	{
+			//settings::crosshair_color = ImGui::ColorConvertFloat4ToU32(color);
+	//	}
+		ImGui::SliderFloat("Thickness", &settings::crosshair_thickness, 1.0f, 10.0f);
+
+		if (settings::Crosshair) // Only show the combo box if the crosshair is enabled
+		{
+
+		}
+	}
+
+}
+
+
+#include <vector>
+#include <random>
+
+struct Snowflake {
+	float x, y;         // Position of the snowflake
+	float speed;        // Speed of the snowflake falling
+	float size;         // Size of the snowflake
+};
+
+void DrawCustomCursor() {
+	// Get the current mouse position
+	ImVec2 mouse_pos = ImGui::GetMousePos();
+
+	// Get the foreground draw list to draw on top of everything
+	ImDrawList* draw_list = ImGui::GetForegroundDrawList();
+
+	// Define the cursor style (e.g., a small circle)
+	float radius = 5.0f;                          // Cursor radius
+	ImU32 color = IM_COL32(255, 0, 247, 255);   // White color
+	ImU32 border_color = IM_COL32(0, 0, 0, 255);  // Black border
+
+	// Draw the circle cursor
+	draw_list->AddCircleFilled(mouse_pos, radius, color);           // Inner circle
+	draw_list->AddCircle(mouse_pos, radius + 1.0f, border_color);   // Outer border
 }
 
 
 
+void render_snowflakes(bool menuVisible)
+{
+	static std::vector<Snowflake> snowflakes;
+	static std::default_random_engine generator;
+	static std::uniform_real_distribution<float> distributionX(0.0f, ImGui::GetIO().DisplaySize.x);
+	static std::uniform_real_distribution<float> distributionSize(2.0f, 5.0f);
+	static std::uniform_real_distribution<float> distributionSpeed(0.1f, 1.0f);
+
+	if (menuVisible) {
+
+		if (snowflakes.size() < 200) {
+			snowflakes.push_back(Snowflake{
+				distributionX(generator),
+				0.0f,
+				distributionSpeed(generator),
+				distributionSize(generator)
+				});
+		}
 
 
+		for (auto& snowflake : snowflakes) {
+			snowflake.y += snowflake.speed;
+			if (snowflake.y > ImGui::GetIO().DisplaySize.y) {
+				snowflake.y = 0.0f;
+			}
+
+			// Draw snowflake as a small circle
+			ImGui::GetForegroundDrawList()->AddCircleFilled(
+				ImVec2(snowflake.x, snowflake.y),
+				snowflake.size,
+				IM_COL32(255, 255, 255, 255)
+			);
+		}
+	}
+	else {
+
+		snowflakes.clear();
+	}
+}
 
 void render_menu()
 {
-	switch (settings::aimbot::current_aimkey)
+	static float colorTimer = 0.0f;
+	static int currentColorIndex = 0;
+	static int nextColorIndex = 1;
+
+
+	ImVec4 colorArray[6] = {
+		ImVec4(0.63f, 0.13f, 0.94f, 1.0f), // Purple
+		ImVec4(0.0f, 0.0f, 1.0f, 1.0f),    // Blue
+		ImVec4(1.0f, 0.0f, 0.0f, 1.0f),    // Red
+		ImVec4(1.0f, 0.0f, 1.0f, 1.0f),    // Magenta
+		ImVec4(0.0f, 1.0f, 1.0f, 1.0f),    // Baby Blue
+		ImVec4(0.0f, 1.0f, 0.0f, 1.0f),    // Green
+	};
+
+
+	colorTimer += ImGui::GetIO().DeltaTime * 0.5f;
+
+
+	if (colorTimer >= 1.0f)
 	{
-	case 0:
-		settings::aimbot::current_key = VK_LBUTTON;
-	case 1:
-		settings::aimbot::current_key = VK_RBUTTON;
+		colorTimer = 0.0f;
+		currentColorIndex = nextColorIndex;
+		nextColorIndex = (nextColorIndex + 1) % 6; // cycle to the next color/ yu can change if needed
 	}
+
+	// Interpolate between current and next color
+	ImVec4 currentColor = colorArray[currentColorIndex];
+	ImVec4 nextColor = colorArray[nextColorIndex];
+	ImVec4 interpolatedColor = ImVec4(
+		currentColor.x + (nextColor.x - currentColor.x) * colorTimer,
+		currentColor.y + (nextColor.y - currentColor.y) * colorTimer,
+		currentColor.z + (nextColor.z - currentColor.z) * colorTimer,
+		currentColor.w + (nextColor.w - currentColor.w) * colorTimer
+	);
+
+
+	render_snowflakes(settings::show_menu);
+#ifndef IM_PI
+#define IM_PI 3.14159265358979323846f
+#endif
+
+
+	// Toggle menu visibility
 	if (settings::aimbot::show_fov) ImGui::GetForegroundDrawList()->AddCircle(ImVec2(ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y / 2), settings::aimbot::fov, ImColor(250, 250, 250, 250), 100, 1.0f);
 	if (GetAsyncKeyState(VK_INSERT) & 1) settings::show_menu = !settings::show_menu;
 	if (settings::show_menu)
-	{
-		ImGui::SetNextWindowSize({ 620, 350 });
-		ImGui::Begin("ImGui::Begin Window", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
-		if (ImGui::Button("Aimbot", { 196, 20 })) settings::tab = 0;
-		ImGui::SameLine();
-		if (ImGui::Button("Visuals", { 196, 20 })) settings::tab = 1;
-		ImGui::SameLine();
-		if (ImGui::Button("Misc", { 196, 20 })) settings::tab = 2;
-		switch (settings::tab)
+
+		if (settings::aimbot::show_fov)
 		{
-			case 0:
+			const int num_segments = 100;
+			const float thickness = 2.5f;
+			const float radius = settings::aimbot::fov;
+			const auto center = ImVec2(ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y / 2);
+
+			ImDrawList* draw_list = ImGui::GetForegroundDrawList();
+			for (int i = 0; i < num_segments; ++i)
 			{
-				ImGui::Checkbox("Enable", &settings::aimbot::enable);
-				ImGui::Checkbox("Show Fov", &settings::aimbot::show_fov);
-				ImGui::SliderFloat("##Fov", &settings::aimbot::fov, 50, 300, "Fov: %.2f");
-				ImGui::SliderFloat("##Smoothness", &settings::aimbot::smoothness, 1, 10, "Smoothness: %.2f");
-				ImGui::Combo("##Aimkey", &settings::aimbot::current_aimkey, settings::aimbot::aimkey, sizeof(settings::aimbot::aimkey) / sizeof(*settings::aimbot::aimkey));
-				break;
-			}
-			case 1:
-			{
-				ImGui::Checkbox("Enable", &settings::visuals::enable);
-				ImGui::Checkbox("Cornered Box", &settings::visuals::CorneredBox);
-				ImGui::SameLine();
-				ImGui::Checkbox("Fill Box", &settings::visuals::fill_box);
-				ImGui::Checkbox("Box", &settings::visuals::Box);
-				ImGui::Checkbox("Line", &settings::visuals::line);
-				ImGui::Checkbox("Distance", &settings::visuals::distance);
-				break;
-			}
-			case 2:
-			{
-				ImGui::Checkbox("WaterMark", &settings::Features::Watermark);
-				ImGui::Checkbox("Debug", &settings::Features::Debug);
-				if (ImGui::Button("Unload", { 120, 20 })) exit(0);
-				break;
+				float start_angle = (i * 2 * IM_PI) / num_segments;
+				float end_angle = ((i + 1) * 2 * IM_PI) / num_segments;
+
+				ImVec2 start = ImVec2(center.x + cosf(start_angle) * radius, center.y + sinf(start_angle) * radius);
+				ImVec2 end = ImVec2(center.x + cosf(end_angle) * radius, center.y + sinf(end_angle) * radius);
+
+				ImColor color = ImColor::HSV(i / (float)num_segments, 1.0f, 1.0f);
+				draw_list->AddLine(start, end, color, thickness);
 			}
 		}
+
+	if (settings::show_menu)
+	{
+		ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+		DrawCustomCursor();
+		ImGui::SetNextWindowSize({ 550, 350 });
+		ImGui::Begin("Xplocc - FREE DETECTED CHEETOS!", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+		ImGuiStyle& style = ImGui::GetStyle();
+		style.FrameRounding = 10.0f;
+		style.WindowRounding = 10.0f;
+		style.ScrollbarRounding = 10.0f;
+		style.Colors[ImGuiCol_Border] = interpolatedColor;
+		style.Colors[ImGuiCol_WindowBg] = ImVec4(0.12f, 0.12f, 0.12f, 1.0f);
+		style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.20f, 0.50f, 0.80f, 1.0f);
+		style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.10f, 0.40f, 0.60f, 1.0f);
+
+
+		ImGui::BeginChild("Tabs", ImVec2(150, 0), true);
+		const char* tabs[] = { "Aimbot", "Visuals", "Links", "Exploits", "Exit" };
+		for (int i = 0; i < IM_ARRAYSIZE(tabs); i++)
+		{
+			if (ImGui::Selectable(tabs[i], settings::tab == i))
+				settings::tab = i;
+			ImGui::Spacing();
+		}
+		ImGui::EndChild();
+
+		ImGui::SameLine();
+		ImGui::BeginChild("MainContent", ImVec2(0, 0), true);
+
+
+		switch (settings::tab)
+		{
+		case 0:
+		{
+			ImGui::Checkbox("Enable", &settings::aimbot::enable);
+			ImGui::Checkbox("RGB Fov", &settings::aimbot::show_fov);
+			ImGui::SliderFloat("##Fov", &settings::aimbot::fov, 50, 300, "Fov: %.2f");
+			ImGui::SliderFloat("##Smoothness", &settings::aimbot::smoothness, 1, 10, "Smoothness: %.2f");
+			ImGui::Combo("##Aimkey", &settings::aimbot::current_aimkey, settings::aimbot::aimkey, sizeof(settings::aimbot::aimkey) / sizeof(*settings::aimbot::aimkey));
+			break;
+		}
+		case 1:
+		{
+			ImGui::Checkbox("Enable", &settings::visuals::enable);
+		//	ImGui::Checkbox("Skeleton", &settings::visuals::skeleton);
+			ImGui::Checkbox("Cornered Box", &settings::visuals::CorneredBox);
+			ImGui::SameLine();
+			ImGui::Checkbox("Fill Box", &settings::visuals::fill_box);
+			ImGui::Checkbox("Box", &settings::visuals::Box);
+			ImGui::Checkbox("Line", &settings::visuals::line);
+			ImGui::Checkbox("Distance", &settings::visuals::distance);
+	//		ImGui::Checkbox("Crosshair", &crosshair::Crosshair);
+			
+			break;
+		}
+		case 2:
+		{
+			
+		
+			if (ImGui::Button("My Discord", { 130, 30 }))
+			{
+
+				ShellExecuteA(0, "open", "https://discord.gg/xplo", 0, 0, SW_SHOWNORMAL);
+			}
+			if (ImGui::Button("Dev Github", { 130, 30 }))
+			{
+
+				ShellExecuteA(0, "open", "https://github.com/vexify1337", 0, 0, SW_SHOWNORMAL);
+			}
+
+
+			ImVec2 discordButtonPos = ImGui::GetItemRectMin();
+			float buttonHeight = 30.0f;
+
+			ImVec2 textPosition = ImVec2(discordButtonPos.x, discordButtonPos.y + buttonHeight + 5);
+
+			ImVec4 messageColor = ImVec4(0.63f, 0.13f, 0.94f, 1.0f);
+
+
+			break;
+		}
+
+		case 3:
+		{
+		//	ImGui::Checkbox("Aim in air", &settings::Exploits::AimInAir);
+		//	ImGui::Checkbox("No Recoil", &settings::Exploits::no_recoil);
+
+			ImVec4 messageColor = ImVec4(0.63f, 0.13f, 0.94f, 1.0f);
+
+		//	ImGui::SetCursorPos(ImVec2(20, 50));
+		//	ImGui::TextColored(messageColor, "Exploits don't have functions");
+
+			ImGui::SetCursorPos(ImVec2(20, 70));
+			ImGui::TextColored(messageColor, "so you have to add them to work");
+
+			ImGui::SetCursorPos(ImVec2(20, 90));
+			ImGui::TextColored(messageColor, "No one loves you <3");
+
+			break;
+		}
+
+		case 4:
+		{
+			if (ImGui::Button("Exit Cheat", { 130, 30 })) exit(0);
+		}
+		}
+
+		ImGui::EndChild();
+
 		ImGui::End();
 	}
 }
